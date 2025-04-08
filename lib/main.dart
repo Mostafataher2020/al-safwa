@@ -1,6 +1,6 @@
 import 'package:al_safwa/features/admin/presentation/manager/admin_cubit/business_cubit.dart';
 import 'package:al_safwa/features/home/presentation/manager/customers_cubit/customer_cubit.dart';
-import 'package:al_safwa/features/home/presentation/views/home_screen.dart';
+import 'package:al_safwa/features/splash_screen/presentation/views/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'إدارة العملاء',
-        home: HomeScreen(),
+        home: SplashScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );

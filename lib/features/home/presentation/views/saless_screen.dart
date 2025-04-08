@@ -196,7 +196,7 @@ Future<void> _saveTransaction() async {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
         centerTitle: true,
@@ -367,7 +367,7 @@ Future<void> _saveTransaction() async {
             ),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blue.shade800,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

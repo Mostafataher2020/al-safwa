@@ -38,6 +38,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.blue.shade800,
         title: Text(_isSaved ? 'تعديل البيانات' : 'تسجيل بيانات صاحب العمل'),
         centerTitle: true,
         elevation: 0,
@@ -66,7 +67,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
                         scale: _isSaved ? 0.8 : 1,
                         child: CircleAvatar(
                           radius: _isSaved ? 40 : 60,
-                          backgroundColor: theme.primaryColor.withOpacity(0.1),
+                          backgroundColor: Colors.blue.shade800,
                           child: Icon(
                             Icons.person,
                             size: _isSaved ? 40 : 60,

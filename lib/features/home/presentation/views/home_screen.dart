@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
+        
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {

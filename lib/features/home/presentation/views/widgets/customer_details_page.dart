@@ -157,7 +157,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
       // 2. تسجيل تحذير إذا كان المبلغ غير كافٍ
       if (remainingPayment > 0) {
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -166,7 +165,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
             backgroundColor: Colors.orange,
           ),
         );
-      
       }
 
       // 3. تحديث بيانات العميل
@@ -192,20 +190,30 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
         _isProcessingPayment = false;
       });
 
-      showDialog(context: context, builder: (context) {
+      showDialog(
+        context: context,
+        builder: (context) {
           return AlertDialog(
             title: const Text('تحذير'),
-            content:  Text(
-              'تم سداد ''${paidAmount - remainingPayment} من $paidAmount فقط',
+            content: Text(
+              'تم سداد '
+              '${paidAmount - remainingPayment} من $paidAmount فقط',
               textAlign: TextAlign.center,
             ),
-            icon: IconButton(onPressed: (){
-                shareInvoiceAsPdf(
-                  _currentCustomer.name,
-                  _currentCustomer.phoneNumber,
-                  paidAmount - remainingPayment,
+            icon: BlocBuilder<BusinessCubit,  BusinessOwner?>(
+              builder: (context, owner) {
+                return IconButton(
+                  onPressed: () {
+                    shareInvoiceAsPdf(
+                      owner?.name??'',
+                      owner?.phone??'',
+                      paidAmount - remainingPayment,
+                    );
+                  },
+                  icon: Icon(Icons.share),
                 );
-            }, icon: Icon(Icons.share)),
+              },
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -213,7 +221,8 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
               ),
             ],
           );
-        });
+        },
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -228,284 +237,325 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     }
   }
 
+  Future<void> shareAccountDetailsAsPdf(
+    String ownerName,
+    String ownerPhone,
+  ) async {
+    // Load a font that supports Arabic (make sure to include the font file in your assets)
+    final arabicFont = pw.Font.ttf(
+      await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"),
+    );
+    // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
 
+    // Create PDF document
+    final pdf = pw.Document();
 
-Future<void> shareAccountDetailsAsPdf(String ownerName,String ownerPhone) async {
-  // Load a font that supports Arabic (make sure to include the font file in your assets)
-  final arabicFont = pw.Font.ttf(await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"));
-  // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
-  
-  // Create PDF document
-  final pdf = pw.Document();
-
-  pdf.addPage(
-    pw.Page(
-      theme: pw.ThemeData.withFont(
-        base: arabicFont, // Use the Arabic-supporting font
-      ),
-      pageFormat: PdfPageFormat.a4,
-      build: (pw.Context context) {
-        return pw.Directionality(
-          textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-            // Header Row
-                  pw.Row(
-                  
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'اسم صاحب الشركة',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+    pdf.addPage(
+      pw.Page(
+        theme: pw.ThemeData.withFont(
+          base: arabicFont, // Use the Arabic-supporting font
+        ),
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Directionality(
+            textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                pw.Row(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        'اسم صاحب الشركة',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          ownerName,
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        ownerName,
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                    ],
-                  ),
-                  pw.Row(
-                  
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'رقم الهاتف',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                  ],
+                ),
+                pw.Row(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        'رقم الهاتف',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          ownerPhone,
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        ownerPhone,
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                    ],
-                  ),  
-              // Header
-              pw.Center(
-                child: pw.Text(
-                  'تفاصيل الحساب',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                    font: arabicFont,
+                    ),
+                  ],
+                ),
+                // Header
+                pw.Center(
+                  child: pw.Text(
+                    'تفاصيل الحساب',
+                    style: pw.TextStyle(
+                      fontSize: 24,
+                      fontWeight: pw.FontWeight.bold,
+                      font: arabicFont,
+                    ),
                   ),
                 ),
-              ),
-              pw.SizedBox(height: 20),
-              
-              // Table with borders
-              pw.Table(
-                border: pw.TableBorder.all(),
-                columnWidths: {
-                  0: const pw.FlexColumnWidth(2),
-                  1: const pw.FlexColumnWidth(3),
-                },
-                children: [
-                  
-                  // Table Header
-                  pw.TableRow(
-                    children: [  pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'القيمة',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
-                        ),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'المعلومات',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),  
-                        ),
-                      ),
-                    
-                    ],
-                  ),
-                  
-                  // Customer Data Rows
-                  _buildTableRow('الاسم', _currentCustomer.name),
-                  _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
-                  _buildTableRow('الرصيد', '${_currentCustomer.balance.toStringAsFixed(2)} جنيه'),
-                  
-                  // Add more rows as needed
-                ],
-              ),
-              
-            
-            ],
-          ),
-        );
-      },
-    ),
-  );
+                pw.SizedBox(height: 20),
 
-  // Save to temporary file and share
-  final dir = await getTemporaryDirectory();
-  final file = File('${dir.path}/customer_summary.pdf');
-  await file.writeAsBytes(await pdf.save());
-  
-  await Share.shareXFiles(
-    [XFile(file.path)],
-    text: 'تفاصيل الحساب - ${_currentCustomer.name}',
-    subject: 'تفاصيل الحساب',
-  );
-}
-Future<void> shareInvoiceAsPdf(String ownerName,String ownerPhone,double paymentAmount) async {
-  // Load a font that supports Arabic (make sure to include the font file in your assets)
-  final arabicFont = pw.Font.ttf(await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"));
-  // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
-  
-  // Create PDF document
-  final pdf = pw.Document();
+                // Table with borders
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(2),
+                    1: const pw.FlexColumnWidth(3),
+                  },
+                  children: [
+                    // Table Header
+                    pw.TableRow(
+                      children: [
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'القيمة',
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              font: arabicFont,
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'المعلومات',
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              font: arabicFont,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
-  pdf.addPage(
-    pw.Page(
-      theme: pw.ThemeData.withFont(
-        base: arabicFont, // Use the Arabic-supporting font
+                    // Customer Data Rows
+                    _buildTableRow('الاسم', _currentCustomer.name),
+                    _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
+                    _buildTableRow(
+                      'الرصيد',
+                      '${_currentCustomer.balance.toStringAsFixed(2)} جنيه',
+                    ),
+
+                    // Add more rows as needed
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      pageFormat: PdfPageFormat.a4,
-      build: (pw.Context context) {
-        return pw.Directionality(
-          textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-            // Header Row
-                  pw.Row(
-                  
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'اسم صاحب الشركة',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+    );
+
+    // Save to temporary file and share
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/فتوره الحساب.pdf');
+    await file.writeAsBytes(await pdf.save());
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'تفاصيل الحساب - ${_currentCustomer.name}',
+      subject: 'تفاصيل الحساب',
+    );
+  }
+
+  Future<void> shareInvoiceAsPdf(
+    String ownerName,
+    String ownerPhone,
+    double paymentAmount,
+  ) async {
+    // Load a font that supports Arabic (make sure to include the font file in your assets)
+    final arabicFont = pw.Font.ttf(
+      await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"),
+    );
+    // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
+
+    // Create PDF document
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        theme: pw.ThemeData.withFont(
+          base: arabicFont, // Use the Arabic-supporting font
+        ),
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Directionality(
+            textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                pw.Row(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        'اسم صاحب الشركة',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          ownerName,
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        ownerName,
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                    ],
-                  ),
-                  pw.Row(
-                  
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'رقم الهاتف',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                  ],
+                ),
+                pw.Row(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        'رقم الهاتف',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          ownerPhone,
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        ownerPhone,
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
                         ),
                       ),
-                    ],
-                  ),  
-              // Header
-              pw.Center(
-                child: pw.Text(
-                  'تفاصيل الحساب',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                    font: arabicFont,
+                    ),
+                  ],
+                ),
+                // Header
+                pw.Center(
+                  child: pw.Text(
+                    'تفاصيل الحساب',
+                    style: pw.TextStyle(
+                      fontSize: 24,
+                      fontWeight: pw.FontWeight.bold,
+                      font: arabicFont,
+                    ),
                   ),
                 ),
-              ),
-              pw.SizedBox(height: 20),
-              
-              // Table with borders
-              pw.Table(
-                border: pw.TableBorder.all(),
-                columnWidths: {
-                  0: const pw.FlexColumnWidth(2),
-                  1: const pw.FlexColumnWidth(3),
-                },
-                children: [
-                  
-                  // Table Header
-                  pw.TableRow(
-                    children: [  pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'القيمة',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),
-                        ),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                          'المعلومات',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: arabicFont),  
-                        ),
-                      ),
-                    
-                    ],
-                  ),
-                  
-                  // Customer Data Rows
-                  _buildTableRow('الاسم', _currentCustomer.name),
-                  _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
-                  _buildTableRow('تاريخ الدفع', _currentCustomer.lastPaymentDate?? DateTime.now().toIso8601String()),
-                  _buildTableRow('المبلغ المدفوع', '$paymentAmount جنيه'),
-                  _buildTableRow('المبلغ المتبقي', '${_currentCustomer.balance.toStringAsFixed(2)} جنيه'),
-                  
-                  // Add more rows as needed
-                ],
-              ),
-              
-            
-            ],
-          ),
-        );
-      },
-    ),
-  );
+                pw.SizedBox(height: 20),
 
-  // Save to temporary file and share
-  final dir = await getTemporaryDirectory();
-  final file = File('${dir.path}/customer_summary.pdf');
-  await file.writeAsBytes(await pdf.save());
-  
-  await Share.shareXFiles(
-    [XFile(file.path)],
-    text: 'تفاصيل الفاتورة - ${_currentCustomer.name}',
-    subject: 'تفاصيل الفاتورة',
-  );
-}
-// Helper function to build table rows
-pw.TableRow _buildTableRow(String label, String value) {
-  return pw.TableRow(
+                // Table with borders
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(2),
+                    1: const pw.FlexColumnWidth(3),
+                  },
+                  children: [
+                    // Table Header
+                    pw.TableRow(
+                      children: [
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'القيمة',
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              font: arabicFont,
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(
+                            'المعلومات',
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              font: arabicFont,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
-    children: [
-    
-      pw.Padding(
-        padding: const pw.EdgeInsets.all(8),
-        child: pw.Text(value),
-      ),  pw.Padding(
-        padding: const pw.EdgeInsets.all(8),
-        child: pw.Text(label),
+                    // Customer Data Rows
+                    _buildTableRow('الاسم', _currentCustomer.name),
+                    _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
+                    _buildTableRow(
+                      'تاريخ الدفع',
+                      _currentCustomer.lastPaymentDate ??
+                          DateTime.now().toIso8601String(),
+                    ),
+                    _buildTableRow('المبلغ المدفوع', '$paymentAmount جنيه'),
+                    _buildTableRow(
+                      'المبلغ المتبقي',
+                      '${_currentCustomer.balance.toStringAsFixed(2)} جنيه',
+                    ),
+
+                    // Add more rows as needed
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
-    ],
-  );
-}
+    );
+
+    // Save to temporary file and share
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/customer_summary.pdf');
+    await file.writeAsBytes(await pdf.save());
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'تفاصيل الفاتورة - ${_currentCustomer.name}',
+      subject: 'تفاصيل الفاتورة',
+    );
+  }
+
+  // Helper function to build table rows
+  pw.TableRow _buildTableRow(String label, String value) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text(value)),
+        pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text(label)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<CustomerCubit, List<Customer>>(
@@ -523,7 +573,9 @@ pw.TableRow _buildTableRow(String label, String value) {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('تفاصيل العميل: ${_currentCustomer.name}'),
+          backgroundColor: Colors.blue.shade800,
+          centerTitle: true,
+          title: Text('${_currentCustomer.name}'),
           actions: [
             IconButton(
               icon: const Icon(Icons.delete_forever, color: Colors.red),
@@ -531,23 +583,29 @@ pw.TableRow _buildTableRow(String label, String value) {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('تحذير'),
-                    content: const Text('هل أنت متأكد من حذف هذا العميل؟'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('إلغاء'),
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('تحذير'),
+                        content: const Text('هل أنت متأكد من حذف هذا العميل؟'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('إلغاء'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              context
+                                  .read<CustomerCubit>()
+                                  .deleteCustomerTransactions(
+                                    _currentCustomer.name,
+                                  );
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                            },
+                            child: const Text('حذف'),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<CustomerCubit>().deleteCustomerTransactions(_currentCustomer.name);
-                          Navigator.pop(context);
-                        },
-                        child: const Text('حذف'),
-                      ),
-                    ],
-                  ),
                 );
               },
             ),
@@ -564,8 +622,8 @@ pw.TableRow _buildTableRow(String label, String value) {
                 ? FloatingActionButton.extended(
                   onPressed: _showPaymentDialog,
                   icon: const Icon(Icons.payment),
-                  label: const Text('تسديد دفعة'),
-                  backgroundColor: Colors.green,
+                  label:  Text('تسديد دفعة',style: TextStyle(color: Colors.black),),
+                  backgroundColor: Colors.blue.shade800,
                 )
                 : null,
         body: Padding(
@@ -596,10 +654,10 @@ pw.TableRow _buildTableRow(String label, String value) {
                             builder: (context, owner) {
                               return IconButton(
                                 onPressed: () {
-                                 shareAccountDetailsAsPdf(
-                                  owner?.name ?? 'المالك',
-                                  owner?.phone ?? 'رقم الهاتف',
-                                 );
+                                  shareAccountDetailsAsPdf(
+                                    owner?.name ?? 'المالك',
+                                    owner?.phone ?? 'رقم الهاتف',
+                                  );
                                 },
                                 icon: Icon(Icons.share, color: Colors.blue),
                               );
@@ -637,15 +695,17 @@ pw.TableRow _buildTableRow(String label, String value) {
                                       : Colors.green,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'الرصيد التراكمي: ${_cumulativeBalance.toStringAsFixed(2)} جنيه',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    _cumulativeBalance > 0
-                                        ? Colors.red
-                                        : Colors.green,
+                            Expanded(
+                              child: Text(
+                                'الرصيد التراكمي: ${_cumulativeBalance.toStringAsFixed(2)} جنيه',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      _cumulativeBalance > 0
+                                          ? Colors.red
+                                          : Colors.green,
+                                ),
                               ),
                             ),
                           ],
