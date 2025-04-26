@@ -13,7 +13,7 @@ class _SplashScreenBodyState extends State<SplashScreenBody> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen()),
       );
@@ -32,7 +32,7 @@ class _SplashScreenBodyState extends State<SplashScreenBody> {
       width: width,
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [Colors.white,Colors.white],begin: Alignment.topLeft,end: Alignment.bottomRight),
-        image:DecorationImage(image: AssetImage('assets/images/alsafwa.jpg'),fit: BoxFit.fill),
+        image:DecorationImage(image: AssetImage('assets/images/thob.jpg'),fit: BoxFit.fill),
       ),
       
     );

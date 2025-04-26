@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:al_safwa/features/admin/presentation/manager/admin_cubit/business_cubit.dart';
-import 'package:al_safwa/features/home/data/models/sale_transaction%20.dart';
+import 'package:al_safwa/features/home/data/models/sale_transaction.dart';  // Fix import
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,7 +20,7 @@ class CustomerDetailsScreen extends StatefulWidget {
   final Customer customer;
 
   const CustomerDetailsScreen({Key? key, required this.customer})
-    : super(key: key);
+      : super(key: key);
 
   @override
   _CustomerDetailsScreenState createState() => _CustomerDetailsScreenState();
@@ -36,6 +36,8 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     super.initState();
     _currentCustomer = widget.customer;
     _cumulativeBalance = _calculateCumulativeBalance();
+    // Sort transactions by date in descending order
+    _currentCustomer.transactions.sort((a, b) => b.date.compareTo(a.date));
   }
 
   double _calculateCumulativeBalance() {
@@ -54,63 +56,62 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
     await showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('تسديد دفعة'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'المبلغ المدفوع',
-                        suffixText: 'جنيه',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'الرجاء إدخال المبلغ';
-                        }
-                        final amount = double.tryParse(value);
-                        if (amount == null || amount <= 0) {
-                          return 'الرجاء إدخال مبلغ صحيح';
-                        }
-                        if (amount > _cumulativeBalance) {
-                          return 'المبلغ أكبر من الرصيد المستحق';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'الرصيد المستحق: ${_cumulativeBalance.toStringAsFixed(2)} جنيه',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
+      builder: (context) => AlertDialog(
+        title: const Text('تسديد دفعة'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'المبلغ المدفوع',
+                    suffixText: 'جنيه',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'الرجاء إدخال المبلغ';
+                    }
+                    final amount = double.tryParse(value);
+                    if (amount == null || amount <= 0) {
+                      return 'الرجاء إدخال مبلغ صحيح';
+                    }
+                    if (amount > _cumulativeBalance) {
+                      return 'المبلغ أكبر من الرصيد المستحق';
+                    }
+                    return null;
+                  },
                 ),
-              ),
+                const SizedBox(height: 10),
+                Text(
+                  'الرصيد المستحق: ${_cumulativeBalance.toStringAsFixed(2)} جنيه',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate()) {
-                    final paidAmount = double.parse(amountController.text);
-                    _recordPayment(paidAmount);
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('تأكيد الدفع'),
-              ),
-            ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                final paidAmount = double.parse(amountController.text);
+                _recordPayment(paidAmount);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('تأكيد الدفع'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -120,109 +121,34 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     setState(() => _isProcessingPayment = true);
 
     try {
-      List<SaleTransaction> updatedTransactions = [];
-      double remainingPayment = paidAmount;
-      double newBalance = _cumulativeBalance;
+      double remainingPayment = await context.read<CustomerCubit>().pay(
+        paidAmount,
+        _currentCustomer.id!,
+      );
 
-      // 1. تحديث المعاملات
-      for (var transaction in _currentCustomer.transactions) {
-        if (remainingPayment <= 0) {
-          updatedTransactions.add(transaction);
-          continue;
-        }
+      if (!mounted) return;
 
-        if (transaction.paymentMethod == 'أجل' &&
-            (transaction.paidAmount ?? 0) < transaction.totalAmount) {
-          double remainingInTransaction =
-              transaction.totalAmount - (transaction.paidAmount ?? 0);
-          double paymentToApply = min(remainingPayment, remainingInTransaction);
-
-          updatedTransactions.add(
-            transaction.copyWith(
-              paidAmount: (transaction.paidAmount ?? 0) + paymentToApply,
-              lastPaymentDate: DateTime.now(),
-              balanceAfterTransaction:
-                  (transaction.balanceAfterTransaction ??
-                      transaction.totalAmount) -
-                  paymentToApply,
-            ),
-          );
-
-          remainingPayment -= paymentToApply;
-          newBalance -= paymentToApply;
-        } else {
-          updatedTransactions.add(transaction);
-        }
-      }
-
-      // 2. تسجيل تحذير إذا كان المبلغ غير كافٍ
+      // Show payment success/partial payment message
       if (remainingPayment > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'تم سداد ${paidAmount - remainingPayment} من $paidAmount فقط',
+              'تم سداد ${(paidAmount - remainingPayment).toStringAsFixed(2)} من أصل $paidAmount جنيه',
             ),
             backgroundColor: Colors.orange,
           ),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تسجيل الدفع بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
 
-      // 3. تحديث بيانات العميل
-      Customer updatedCustomer2 = _currentCustomer.copyWith(
-        transactions: updatedTransactions,
-        balance: newBalance,
-        lastPaymentDate: DateTime.now().toIso8601String(),
-        lastPaymentAmount: paidAmount,
-      );
+      setState(() => _isProcessingPayment = false);
 
-      // 4. حفظ التغييرات
-      await context.read<CustomerCubit>().updateCustomer2(
-        _currentCustomer.name,
-        updatedCustomer2,
-      );
-
-      // 5. تحديث الواجهة
-      if (!mounted) return;
-
-      setState(() {
-        _currentCustomer = updatedCustomer2;
-        _cumulativeBalance = newBalance;
-        _isProcessingPayment = false;
-      });
-
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('تحذير'),
-            content: Text(
-              'تم سداد '
-              '${paidAmount - remainingPayment} من $paidAmount فقط',
-              textAlign: TextAlign.center,
-            ),
-            icon: BlocBuilder<BusinessCubit,  BusinessOwner?>(
-              builder: (context, owner) {
-                return IconButton(
-                  onPressed: () {
-                    shareInvoiceAsPdf(
-                      owner?.name??'',
-                      owner?.phone??'',
-                      paidAmount - remainingPayment,
-                    );
-                  },
-                  icon: Icon(Icons.share),
-                );
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('إغلاق'),
-              ),
-            ],
-          );
-        },
-      );
     } catch (e) {
       if (!mounted) return;
 
@@ -241,28 +167,32 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     String ownerName,
     String ownerPhone,
   ) async {
-    // Load a font that supports Arabic (make sure to include the font file in your assets)
     final arabicFont = pw.Font.ttf(
       await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"),
     );
-    // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
+    final logo = await rootBundle.load("assets/images/logo.PNG");
 
-    // Create PDF document
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
         theme: pw.ThemeData.withFont(
-          base: arabicFont, // Use the Arabic-supporting font
+          base: arabicFont,
         ),
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
           return pw.Directionality(
-            textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
+            textDirection: pw.TextDirection.rtl,
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // Header Row
+                pw.Center(
+                  child: pw.Image(
+                    pw.MemoryImage(logo.buffer.asUint8List()),
+                    width: 80,
+                    height: 100,
+                  ),
+                ),
                 pw.Row(
                   children: [
                     pw.Padding(
@@ -311,7 +241,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     ),
                   ],
                 ),
-                // Header
                 pw.Center(
                   child: pw.Text(
                     'تفاصيل الحساب',
@@ -323,8 +252,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                   ),
                 ),
                 pw.SizedBox(height: 20),
-
-                // Table with borders
                 pw.Table(
                   border: pw.TableBorder.all(),
                   columnWidths: {
@@ -332,7 +259,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     1: const pw.FlexColumnWidth(3),
                   },
                   children: [
-                    // Table Header
                     pw.TableRow(
                       children: [
                         pw.Padding(
@@ -357,16 +283,12 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                         ),
                       ],
                     ),
-
-                    // Customer Data Rows
                     _buildTableRow('الاسم', _currentCustomer.name),
                     _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
                     _buildTableRow(
                       'الرصيد',
                       '${_currentCustomer.balance.toStringAsFixed(2)} جنيه',
                     ),
-
-                    // Add more rows as needed
                   ],
                 ),
               ],
@@ -376,7 +298,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       ),
     );
 
-    // Save to temporary file and share
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/فتوره الحساب.pdf');
     await file.writeAsBytes(await pdf.save());
@@ -390,31 +311,60 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
   Future<void> shareInvoiceAsPdf(
     String ownerName,
+    String factoryName,
     String ownerPhone,
     double paymentAmount,
   ) async {
-    // Load a font that supports Arabic (make sure to include the font file in your assets)
     final arabicFont = pw.Font.ttf(
       await rootBundle.load("assets/fonts/alfont_com_Tasees-Bold.ttf"),
     );
-    // Or use a default font that supports Arabic (like 'Arial Unicode MS' if available)
+    final logo = await rootBundle.load("assets/images/logo.PNG");
 
-    // Create PDF document
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
         theme: pw.ThemeData.withFont(
-          base: arabicFont, // Use the Arabic-supporting font
+          base: arabicFont,
         ),
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
           return pw.Directionality(
-            textDirection: pw.TextDirection.rtl, // Right-to-left for Arabic
+            textDirection: pw.TextDirection.rtl,
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // Header Row
+                pw.Center(
+                  child: pw.Image(
+                    pw.MemoryImage(logo.buffer.asUint8List()),
+                    width: 80,
+                    height: 100,
+                  ),
+                ),
+                pw.Row(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        'اسم المصنع ',
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
+                        ),
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(
+                        factoryName,
+                        style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold,
+                          font: arabicFont,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 pw.Row(
                   children: [
                     pw.Padding(
@@ -463,7 +413,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     ),
                   ],
                 ),
-                // Header
                 pw.Center(
                   child: pw.Text(
                     'تفاصيل الحساب',
@@ -475,8 +424,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                   ),
                 ),
                 pw.SizedBox(height: 20),
-
-                // Table with borders
                 pw.Table(
                   border: pw.TableBorder.all(),
                   columnWidths: {
@@ -484,7 +431,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     1: const pw.FlexColumnWidth(3),
                   },
                   children: [
-                    // Table Header
                     pw.TableRow(
                       children: [
                         pw.Padding(
@@ -509,23 +455,30 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                         ),
                       ],
                     ),
-
-                    // Customer Data Rows
                     _buildTableRow('الاسم', _currentCustomer.name),
                     _buildTableRow('رقم الهاتف', _currentCustomer.phoneNumber),
                     _buildTableRow(
                       'تاريخ الدفع',
                       _currentCustomer.lastPaymentDate ??
-                          DateTime.now().toIso8601String(),
+                          "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
                     ),
                     _buildTableRow('المبلغ المدفوع', '$paymentAmount جنيه'),
                     _buildTableRow(
                       'المبلغ المتبقي',
                       '${_currentCustomer.balance.toStringAsFixed(2)} جنيه',
                     ),
-
-                    // Add more rows as needed
                   ],
+                ),
+                pw.SizedBox(height: 40),
+                pw.Center(
+                  child: pw.Text(
+                    "صنع في مصر",
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      font: arabicFont,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -534,7 +487,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       ),
     );
 
-    // Save to temporary file and share
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/customer_summary.pdf');
     await file.writeAsBytes(await pdf.save());
@@ -546,7 +498,6 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     );
   }
 
-  // Helper function to build table rows
   pw.TableRow _buildTableRow(String label, String value) {
     return pw.TableRow(
       children: [
@@ -561,7 +512,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     return BlocListener<CustomerCubit, List<Customer>>(
       listener: (context, state) {
         final updatedCustomer = state.firstWhere(
-          (c) => c.name == _currentCustomer.name,
+          (c) => c.id == _currentCustomer.id,
           orElse: () => _currentCustomer,
         );
         if (updatedCustomer != _currentCustomer) {
@@ -583,48 +534,45 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('تحذير'),
-                        content: const Text('هل أنت متأكد من حذف هذا العميل؟'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('إلغاء'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              context
-                                  .read<CustomerCubit>()
-                                  .deleteCustomerTransactions(
-                                    _currentCustomer.name,
-                                  );
-                              Navigator.pop(context);
-                              Navigator.pop(context);
-                            },
-                            child: const Text('حذف'),
-                          ),
-                        ],
+                  builder: (context) => AlertDialog(
+                    title: const Text('تحذير'),
+                    content: const Text('هل أنت متأكد من حذف هذا العميل؟'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('إلغاء'),
                       ),
+                      ElevatedButton(
+                        onPressed: () {
+                          context.read<CustomerCubit>().deleteCustomer(_currentCustomer.name);
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('حذف'),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ],
         ),
-        floatingActionButton:
-            _isProcessingPayment
-                ? FloatingActionButton(
-                  onPressed: null,
-                  backgroundColor: Colors.grey,
-                  child: const CircularProgressIndicator(color: Colors.white),
-                )
-                : _cumulativeBalance > 0
+        floatingActionButton: _isProcessingPayment
+            ? FloatingActionButton(
+                onPressed: null,
+                backgroundColor: Colors.grey,
+                child: const CircularProgressIndicator(color: Colors.white),
+              )
+            : _cumulativeBalance > 0
                 ? FloatingActionButton.extended(
-                  onPressed: _showPaymentDialog,
-                  icon: const Icon(Icons.payment),
-                  label:  Text('تسديد دفعة',style: TextStyle(color: Colors.black),),
-                  backgroundColor: Colors.blue.shade800,
-                )
+                    onPressed: _showPaymentDialog,
+                    icon: const Icon(Icons.payment),
+                    label: Text(
+                      'تسديد دفعة',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    backgroundColor: Colors.blue.shade800,
+                  )
                 : null,
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -677,10 +625,9 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color:
-                              _cumulativeBalance > 0
-                                  ? Colors.red.withOpacity(0.1)
-                                  : Colors.green.withOpacity(0.1),
+                          color: _cumulativeBalance > 0
+                              ? Colors.red.withOpacity(0.1)
+                              : Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -689,10 +636,9 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                               _cumulativeBalance > 0
                                   ? Icons.warning_amber_rounded
                                   : Icons.check_circle,
-                              color:
-                                  _cumulativeBalance > 0
-                                      ? Colors.red
-                                      : Colors.green,
+                              color: _cumulativeBalance > 0
+                                  ? Colors.red
+                                  : Colors.green,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -701,10 +647,9 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color:
-                                      _cumulativeBalance > 0
-                                          ? Colors.red
-                                          : Colors.green,
+                                  color: _cumulativeBalance > 0
+                                      ? Colors.red
+                                      : Colors.green,
                                 ),
                               ),
                             ),
@@ -722,29 +667,15 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child:
-                    _currentCustomer.transactions.isEmpty
-                        ? const Center(child: Text('لا توجد فواتير مسجلة'))
-                        : ListView.builder(
-                          itemCount: _currentCustomer.transactions.length,
-                          itemBuilder: (context, index) {
-                            final transaction =
-                                _currentCustomer.transactions[_currentCustomer
-                                        .transactions
-                                        .length -
-                                    1 -
-                                    index];
-
-                            // إخفاء الفواتير المسددة بالكامل
-                            if (transaction.paymentMethod == 'أجل' &&
-                                (transaction.paidAmount ?? 0) >=
-                                    transaction.totalAmount) {
-                              return const SizedBox.shrink();
-                            }
-
-                            return _buildTransactionCard(transaction);
-                          },
-                        ),
+                child: _currentCustomer.transactions.isEmpty
+                    ? const Center(child: Text('لا توجد فواتير مسجلة'))
+                    : ListView.builder(
+                        itemCount: _currentCustomer.transactions.length,
+                        itemBuilder: (context, index) {
+                          // Use direct index since list is already sorted
+                          return _buildTransactionCard(_currentCustomer.transactions[index]);
+                        },
+                      ),
               ),
             ],
           ),
@@ -768,8 +699,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
   Widget _buildTransactionCard(SaleTransaction transaction) {
     final isCredit = transaction.paymentMethod == 'أجل';
-    final remainingAmount =
-        transaction.totalAmount - (transaction.paidAmount ?? 0);
+    final remainingAmount = transaction.totalAmount - (transaction.paidAmount ?? 0);
     final isPaid = remainingAmount <= 0;
 
     return Card(
@@ -778,27 +708,20 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color:
-              isCredit
-                  ? (isPaid
-                      ? Colors.red.withOpacity(0.3)
-                      : Colors.red.withOpacity(0.3))
-                  : Colors.blue.withOpacity(0.3),
+          color: isCredit
+              ? (isPaid ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3))
+              : Colors.blue.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: ExpansionTile(
         leading: Icon(
           isCredit ? Icons.credit_card : Icons.payment,
-          color:
-              isCredit
-                  ? (isPaid ? Colors.green : Colors.redAccent)
-                  : Colors.blue,
+          color: isCredit ? (isPaid ? Colors.green : Colors.redAccent) : Colors.blue,
           size: 32,
         ),
         title: Text(
-          transaction.paymentMethod,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          transaction.paymentMethod ?? 'معاملة د ',    style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('${transaction.totalAmount.toStringAsFixed(2)} جنيه'),
         children: [
@@ -807,17 +730,17 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTransactionDetail('الكمية', '${transaction.quantity}'),
+                _buildTransactionDetail('اسم الصنف', transaction.productName ?? 'غير متوفر'),
+                _buildTransactionDetail('الكمية', '${transaction.quantity ?? 0}'),
                 _buildTransactionDetail(
                   'سعر الوحدة',
-                  '${transaction.unitPrice?.toStringAsFixed(2)} جنيه',
+                  '${transaction.unitPrice?.toStringAsFixed(2) ?? 'غير متوفر'} جنيه',
                 ),
                 _buildTransactionDetail(
                   'الإجمالي',
                   '${transaction.totalAmount.toStringAsFixed(2)} جنيه',
                 ),
                 const Divider(),
-
                 if (isCredit) ...[
                   _buildTransactionDetail(
                     'المبلغ المدفوع',
@@ -834,36 +757,40 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     isPaid ? 'مسددة بالكامل' : 'غير مسددة',
                     color: isPaid ? Colors.green : Colors.red,
                   ),
-                  const Divider(),
                 ],
-
-                _buildTransactionDetail(
-                  'طريقة الدفع',
-                  transaction.paymentMethod,
-                ),
+                const Divider(),
                 _buildTransactionDetail(
                   'التاريخ',
                   transaction.date != null
                       ? '${transaction.date!.day}/${transaction.date!.month}/${transaction.date!.year}'
                       : 'غير معروف',
                 ),
-
-                if (isCredit &&
-                    transaction.paidAmount != null &&
-                    transaction.paidAmount! > 0) ...[
-                  const Divider(),
-                  _buildTransactionDetail(
-                    'تاريخ آخر دفعة',
-                    transaction.date?.toString().substring(0, 10) ??
-                        'غير معروف',
-                  ),
-                ],
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: () => _deleteTransaction(transaction.id!),
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  label: const Text('حذف المعاملة'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteTransaction(int transactionId) async {
+    try {
+      await context.read<CustomerCubit>().deleteTransaction(transactionId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف المعاملة بنجاح')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل في حذف المعاملة: ${e.toString()}')),
+      );
+    }
   }
 
   Widget _buildTransactionDetail(String label, String value, {Color? color}) {

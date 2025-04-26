@@ -13,6 +13,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _factoryController;
   bool _isSaved = false;
   bool _isEditing = false;
 
@@ -22,6 +23,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
     final owner = context.read<BusinessCubit>().state;
     _nameController = TextEditingController(text: owner?.name ?? '');
     _phoneController = TextEditingController(text: owner?.phone ?? '');
+    _factoryController = TextEditingController(text: owner?.factory ?? '');
     _isSaved = owner != null;
   }
 
@@ -207,6 +209,54 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _factoryController,
+                        enabled: !_isSaved || _isEditing,
+                        decoration: InputDecoration(
+                          labelText: 'اسم المصنع',
+                          prefixIcon: const Icon(Icons.person_outline),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.dividerColor,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.dividerColor,
+                            ),
+                          ),
+                          disabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Colors.grey.withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.primaryColor,
+                              width: 2,
+                            ),
+                          ),
+                          filled: _isSaved && !_isEditing,
+                          fillColor: Colors.grey.withOpacity(0.1),
+                        ),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: _isSaved && !_isEditing 
+                              ? Colors.grey 
+                              : theme.textTheme.bodyLarge?.color,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'يجب إدخال الاسم';
+                          }
+                          return null;
+                        },
+                      ),
+
                       const SizedBox(height: 30),
                       if (_isEditing || !_isSaved)
                         SizedBox(
@@ -215,7 +265,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
                           child: ElevatedButton(
                             onPressed: _saveOwnerInfo,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.primaryColor,
+                              backgroundColor: Colors.blue.shade800,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -247,6 +297,7 @@ class _BusinessOwnerScreenState extends State<BusinessOwnerScreen> {
       final success = await context.read<BusinessCubit>().saveOwner(
             _nameController.text.trim(),
             _phoneController.text.trim(),
+            _factoryController.text.trim(),
           );
 
       if (success && mounted) {

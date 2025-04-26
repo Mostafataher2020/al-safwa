@@ -79,6 +79,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
   AppBar _buildAppBar(ThemeData theme) {
     return AppBar(
+      
       title: Text(
         widget.isEditing ? 'تعديل بيانات العميل' : 'عميل جديد',
         style: theme.textTheme.titleLarge?.copyWith(
@@ -87,7 +88,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         ),
       ),
       centerTitle: true,
-      backgroundColor: theme.primaryColor,
+      backgroundColor: Colors.blue.shade800,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -164,15 +165,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         prefixIcon: const Icon(Icons.person_outline),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color: Colors.blue.shade800),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color: Colors.blue.shade800),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+          borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
@@ -196,7 +197,16 @@ Widget _buildPhoneField(ThemeData theme) {
       prefixIcon: const Icon(Icons.phone_android),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blue.shade800),
       ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blue.shade800),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
+        ),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     ),
     inputFormatters: [
@@ -228,15 +238,15 @@ Widget _buildPhoneField(ThemeData theme) {
         prefixIcon: const Icon(Icons.email_outlined),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color: Colors.blue.shade800),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color:Colors.blue.shade800),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+          borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
@@ -262,15 +272,15 @@ Widget _buildPhoneField(ThemeData theme) {
         alignLabelWithHint: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color:Colors.blue.shade800),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.dividerColor),
+          borderSide: BorderSide(color: Colors.blue.shade800),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+          borderSide: BorderSide(color: Colors.blue.shade800, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
@@ -285,7 +295,7 @@ Widget _buildPhoneField(ThemeData theme) {
         ElevatedButton(
           onPressed: _submitForm,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: Colors.blue.shade800,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(

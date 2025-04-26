@@ -1,17 +1,18 @@
-import 'package:al_safwa/features/home/data/models/sale_transaction%20.dart';
+import 'package:al_safwa/features/home/data/models/sale_transaction.dart';
 
 class Customer {
+  final int? id;
   final String name;
   final String phoneNumber;
   final String? email;
   final String? address;
   final String? imageUrl;
-  final List<SaleTransaction> transactions;
+  List<SaleTransaction> transactions;
   final String? lastPaymentDate;
   final double? lastPaymentAmount;
-  
 
   Customer({
+    this.id,
     required this.name,
     required this.phoneNumber,
     this.address,
@@ -21,50 +22,44 @@ class Customer {
     this.lastPaymentDate,
     this.lastPaymentAmount,
   });
-  
 
-  @override
-  bool operator ==(Object other) {
-    return other is Customer && other.name == name;
+  double get balance {
+    if (transactions.isEmpty) return 0.0;
+      double balance = 0.0;
+    for (var transaction in transactions) {
+      if (transaction.paymentMethod == 'أجل') {
+        balance += transaction.totalAmount - (transaction.paidAmount ?? 0);
+      }
+    }
+    return balance;
   }
 
-  @override
-  int get hashCode => name.hashCode;
-
-  // إضافة معاملة جديدة
-  Customer addTransaction(SaleTransaction newTransaction) {
+  Customer copyWith({
+    List<SaleTransaction>? transactions,
+    String? lastPaymentDate,
+    double? lastPaymentAmount,
+  }) {
     return Customer(
-      name: name ?? this.name,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      address: address ?? this.address,
-      email: email ?? this.email,
-      imageUrl: imageUrl ?? this.imageUrl,
-      transactions: [...transactions, newTransaction] ?? [],
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      address: address,
+      email: email,
+      imageUrl: imageUrl,
+      transactions: transactions ?? this.transactions,
       lastPaymentDate: lastPaymentDate ?? this.lastPaymentDate,
       lastPaymentAmount: lastPaymentAmount ?? this.lastPaymentAmount,
     );
   }
 
-
-  // حساب الرصيد المتبقي على العميل
-  double get balance {
-    double totalDebt = transactions.fold(0, (sum, t) => sum + t.totalAmount);
-    double totalPaid = transactions.fold(
-      0,
-      (sum, t) => sum + (t.paidAmount ?? 0),
-    );
-    return totalDebt - totalPaid; // المبلغ المتبقي
-  }
-
-  // تحويل البيانات إلى Map (للتخزين في قاعدة البيانات)
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'phoneNumber': phoneNumber,
       'address': address,
       'email': email,
       'imageUrl': imageUrl,
-      'transactions': transactions.map((t) => t.toMap()).toList(),
       'lastPaymentDate': lastPaymentDate,
       'lastPaymentAmount': lastPaymentAmount,
     };
@@ -72,37 +67,14 @@ class Customer {
 
   factory Customer.fromMap(Map<String, dynamic> map) {
     return Customer(
+      id: map['id'],
       name: map['name'],
       phoneNumber: map['phoneNumber'],
       address: map['address'],
       email: map['email'],
       imageUrl: map['imageUrl'],
-      transactions: List<SaleTransaction>.from(
-        map['transactions']?.map((x) => SaleTransaction.fromMap(x)) ?? [],
-
-      ),
       lastPaymentDate: map['lastPaymentDate'],
       lastPaymentAmount: map['lastPaymentAmount'],
     );
   }
-
-  get phone => null;
-
-Customer  copyWith({
-    required List<SaleTransaction> transactions,
-    required double balance,
-     String? lastPaymentDate, required double lastPaymentAmount,
-  }) {
-    return Customer(
-      name: name,
-      phoneNumber: phoneNumber,
-      address: address,
-      email: email,
-      imageUrl: imageUrl,
-      transactions: transactions,
-      lastPaymentDate:  lastPaymentDate,
-      lastPaymentAmount: lastPaymentAmount,
-    );
-  }
-  
 }

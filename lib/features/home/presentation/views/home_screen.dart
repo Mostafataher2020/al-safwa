@@ -1,5 +1,6 @@
 import 'package:al_safwa/features/admin/presentation/views/business_owner_screen.dart';
 import 'package:al_safwa/features/home/presentation/views/customers_screen.dart';
+import 'package:al_safwa/features/home/presentation/views/factory_screen.dart';
 import 'package:al_safwa/features/home/presentation/views/saless_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _pages = [
     CustomersScreen(),
     SalesScreen(),
+    FactoryScreen(),
     BusinessOwnerScreen(),
   ];
   @override
@@ -29,11 +31,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        
+        selectedItemColor: Colors.blue.shade800,
+        unselectedItemColor: Colors.blue.shade800,
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index; // تحديث الصفحة عند الضغط على عنصر
+            _selectedIndex = index;
           });
         },
         items: [
@@ -44,6 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart),
             label: "المبيعات",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.factory),
+            label: "المصنع",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
